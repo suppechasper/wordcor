@@ -17,3 +17,4 @@ Shiny app for word correlation exploration.
    1. library(WordCor)
    2. wordcor()
 
+Note wordcor will save smoothed version of the data in the current diretory you run wordcor(). If your it in the same directory again it will reuse the smoothed versions and not recompute them.
