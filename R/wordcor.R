@@ -8,7 +8,8 @@ wordcor <- function(datafile = "google-nouns-scaled"){
   library(Rtsne)
   library(gmra)
 
-  data(datafile)
+  assign("datafile", datafile, envir = .GlobalEnv)
+  data( list = datafile )
 
   ui <- wordcor.ui()
   shinyApp(ui, wordcor.server)
