@@ -12,5 +12,5 @@ Shiny app for word correlation exploration.
 1. Start R.
 2. In R run the commands:
    1. library(WordCor)
-   2 wordcor()
+   2. wordcor()
 
