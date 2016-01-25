@@ -8,7 +8,10 @@ Shiny app for word correlation exploration.
 3. In R run the commands:
     1. install.packages("devtools")
     2. devtools::install_github("suppechasper/wordcor")
+     
+    
 ## Running ##
+
 1. Start R.
 2. In R run the commands:
    1. library(WordCor)
