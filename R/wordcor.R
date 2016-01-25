@@ -1,13 +1,14 @@
 
-wordcor <- function(){
+wordcor <- function(datafile = "google-nouns-scaled"){
   library(Matrix)
   library(shiny)
   library(DT)
   library(plotrix)
   library(KernSmooth)
   library(Rtsne)
-  library(gmnra)
-  data("google-nouns-scaled")
+  library(gmra)
+
+  data(datafile)
 
   ui <- wordcor.ui()
   shinyApp(ui, wordcor.server)

@@ -28,8 +28,6 @@
 
 wordcor.server <- function(input,output,session){
 
-  datafile = "google-nouns-scaled"
-
   ## Reactive variables ##
   selection <- reactiveValues()
   selection$brushed <- c()
