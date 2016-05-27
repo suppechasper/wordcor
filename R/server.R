@@ -24,24 +24,6 @@
 # on scores and counts.
 
 
-library( Matrix )
-library( Rtsne )
-library( plotrix )
-library( shiny )
-library( KernSmooth )
-library( gmra )
-
-source("myNearPoints.R")
-source("myBrushedPoints.R")
-
-
-datafile = "google-nouns-scaled"
-#conatins data$raw and minYear, maxYear
-load( sprintf("%s.Rdata", datafile) )
-#load("D.Rdata")
-
-
-
 wordcor.server <- function(input,output,session){
 
 
@@ -725,6 +707,3 @@ wordcor.server <- function(input,output,session){
 
 }
 
-
-
-wordcor.server
