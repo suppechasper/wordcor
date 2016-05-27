@@ -7,7 +7,8 @@ Shiny app for word correlation exploration.
 2. Start R
 3. In R run the commands:
     1. install.packages( c("shiny", "DT", "Matrix", "KernSmooth", "plotrix", "Rtsne", "devtools") )
-    2. devtools::install_github( c("suppechasper/gmra", "suppechasper/wordcor") )
+    2. library("devtools")
+    3. devtools::install_github( c("suppechasper/gmra", "suppechasper/wordcor") )
      
     
 ## Running ##
