@@ -24,9 +24,26 @@
 # on scores and counts.
 
 
+library( Matrix )
+library( Rtsne )
+library( plotrix )
+library( shiny )
+library( KernSmooth )
+library( gmra )
+
+source("myNearPoints.R")
+source("myBrushedPoints.R")
+
+
+datafile = "google-nouns-scaled"
+#conatins data$raw and minYear, maxYear
+load( sprintf("%s.Rdata", datafile) )
+#load("D.Rdata")
+
 
 
 wordcor.server <- function(input,output,session){
+
 
   ## Reactive variables ##
   selection <- reactiveValues()
@@ -38,7 +55,8 @@ wordcor.server <- function(input,output,session){
     selection$brushed <<- c()
   })    
 
-
+  #maxThreshold = max( rowSums(data$raw) )
+  #updateSliderInput(session, "threshold.scores", max=maxThreshold, step=maxThreshold/100)
   
   
   
@@ -98,7 +116,8 @@ wordcor.server <- function(input,output,session){
      Xs <- Xs / sqrt(ncol(Xs)-1)
      rownames(Xs) <- data$words
      rownames(X) <- data$words
-     index = which( complete.cases(Xs) )
+     index = which( complete.cases(Xs)  &  rowSums(X) > input$threshold.scores )
+
      Xs <- Xs[index, ]
      X <- X[index, ]
      complete <<- index
@@ -191,7 +210,7 @@ wordcor.server <- function(input,output,session){
 
   ### Projected data ###
   # depends on gmra data and primary and secondary
-  # primary and seocndary go through the same pipeline as data.raw 
+  # primary and secondary go through the same pipeline as data.raw 
   #
 
   #Projection definiton points  
@@ -268,7 +287,7 @@ wordcor.server <- function(input,output,session){
   })
 
   primary.projected <- reactive({
-     c(1, 0) 
+     c( 1, ortho() %*% primary.sliced()$score ) 
   })
 
   #secondary pipeline
@@ -308,9 +327,16 @@ wordcor.server <- function(input,output,session){
   })
 
   ortho <- reactive({
-    a <-  primary.sliced()$score %*% secondary.sliced()$score
-    o <- secondary.sliced()$score - a * primary.sliced()$score
-    o / sqrt( sum( o^2 ) )
+    o <- rep(0, length( primary.sliced()$score ) ) 
+    if(input$corrplottype=="ortho"){
+      a <- primary.sliced()$score %*% secondary.sliced()$score
+      o <- secondary.sliced()$score - a * primary.sliced()$score
+      o / sqrt( sum( o^2 ) )
+    }
+    else if(input$corrplottype=="2d"){
+      o <- secondary.sliced()$score 
+    }
+    o
   })
 
   secondary.projected <- reactive({
@@ -508,8 +534,13 @@ wordcor.server <- function(input,output,session){
     
     cols = rep("#00000010", nrow(X) )
     cols[ selection$brushed ] = "#66339950"
+
+    pointtype = 19
+    if(input$corrplottype == "1d"){
+      pointtype="|"
+    }
     plot( y ~ x, data=X, type="p", xlim = c( -1.1, 1.1 ), ylim = c( -1.1, 1.1 ), asp=1, 
-          pch=19, col=cols, bty="n", axes=FALSE, xlab="", ylab="" )
+          pch=pointtype, col=cols, bty="n", axes=FALSE, xlab="", ylab="" )
     
     if( length(input$table_rows_selected) > 0 ){
       Sp <- cbind( sliced()$scores[ input$table_rows_selected, ] %*% primary.sliced()$score,
@@ -518,11 +549,38 @@ wordcor.server <- function(input,output,session){
     }
 
     
-    points( rbind(primary.projected(), secondary.projected()  ), pch=19, col=c("red", "orange") )
+    points( rbind( primary.projected(), secondary.projected()  ), pch=19, col=c("red", "orange") )
 
-    draw.circle(0,0, 1, nv=100, border="gray",col=NA, lty=1, lwd=1)
-    lines(c(-1,1), c(0,0), col="black", lwd = 2)
-    lines(c(0,0), c(-1,1), col="black", lwd = 2)
+    if(input$corrplottype == "ortho" ){
+      draw.circle(0,0, 1, nv=100, border="gray",col=NA, lty=1, lwd=2)
+      lines(c(-1,1), c(0,0), col="black", lwd = 3)
+      lines(c(0,0), c(-1,1), col="black", lwd = 3)
+      lines(c(-0.5,0.5), c(-0.5,-0.5), col="black", lwd = 1)
+      lines(c(-0.5,0.5), c(0.5,0.5), col="black", lwd = 1)
+      lines(c(0.5,0.5), c(-0.5,0.5), col="black", lwd = 1)
+      lines(c(-0.5,-0.5), c(-0.5,0.5), col="black", lwd = 1)
+    }
+    else if(input$corrplottype == "2d" ){
+      lines(c(-1,1), c(-1,-1), col="black", lwd = 2)
+      lines(c(-1,1), c(-0.5,-0.5), col="black", lwd = 1)
+      lines(c(-1,1), c(0,0), col="black", lwd = 3)
+      lines(c(-1,1), c(0.5,0.5), col="black", lwd = 1)
+      lines(c(-1,1), c(1,1), col="black", lwd = 2)
+      
+      lines(c(-1,-1), c(-1,1), col="black", lwd = 2)
+      lines(c(-0.5,-0.5), c(-1,1), col="black", lwd = 1)
+      lines(c(0,0), c(-1,1), col="black", lwd = 3)
+      lines(c(0.5,0.5), c(-1,1), col="black", lwd = 1)
+      lines(c(1,1), c(-1,1), col="black", lwd = 3)
+    }
+    else{
+      lines(c(-1,1), c(0,0), col="black", lwd = 3)
+      lines(c(0,0), c(-0.09,0.09), col="black", lwd = 2)
+      lines(c(1,1), c(-0.12,0.12), col="black", lwd = 2)
+      lines(c(-0.5,-0.5), c(-0.06,0.06), col="black", lwd = 1)
+      lines(c(0.5,0.5), c(-0.06,0.06), col="black", lwd = 1)
+      lines(c(-1,-1), c(-0.12,0.12), col="black", lwd = 2)
+    }
 
   }, width=500, height=500 )
 
@@ -669,3 +727,4 @@ wordcor.server <- function(input,output,session){
 
 
 
+wordcor.server
