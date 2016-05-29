@@ -20,30 +20,49 @@ fluidPage(
         actionButton("reset", "Reset Selection")
       )
     ),
+
     hr(),
+
     fluidRow(
-      column(7, 
+      column(3, 
+        textInput("primary", "Primary:", value = "", width = NULL, placeholder = NULL)
+      ),
+      column(6,
+         plotOutput( "corrprimary", click="point_click", dblclick="point_dbl_click",
+                                           hover="point_hover", brush=brushOpts("point_brush", resetOnNew=TRUE), width="100%", height=50 )
+      )
+    ),
+    fluidRow(
+      column(3, 
+        textInput("secondary", "Secondary:", value = "", width = NULL, placeholder = NULL)
+      ),
+      column(6, 
+         plotOutput( "corrsecondary", click="point_click", dblclick="point_dbl_click",
+                                           hover="point_hover", brush=brushOpts("point_brush", resetOnNew=TRUE), width="100%", height=50 )
+      )
+    ),
+    fluidRow(
+      column(8, 
         #tabsetPanel(
          # tabPanel("Corrleation",
-             selectInput("corrplottype", "plot Type", c("1d", "2d", "ortho"), selected = "1d", multiple = FALSE, selectize = TRUE),
              plotOutput( "corr", click="point_click", dblclick="point_dbl_click",
-                                           hover="point_hover", brush=brushOpts("point_brush", resetOnNew=TRUE) ),
+                                           hover="point_hover", brush=brushOpts("point_brush", resetOnNew=TRUE),  height=400, width=400 ),
              fluidRow(
-               column(3, 
+               column(2, 
                  sliderInput("scale.scores", "Scale:", min=0, max=20, step = 1, value=5)
                ),
-               column(3, 
-                 textInput("primary", "Primary:", value = "", width = NULL, placeholder = NULL)
-               )
-             ),
-             fluidRow(
-               column(3, 
-                 sliderInput("threshold.scores", "Threshold:", min=0, max=0.2, step = 0.0001, value=0)
+               column(2, 
+                 sliderInput("threshold.scores", "Threshold:", min=0, max=0.4, step = 0.0001, value=0)
                ),
-               column(3, 
-                 textInput("secondary", "Secondary:", value = "", width = NULL, placeholder = NULL)
+               column(2, 
+                 selectInput("corrplottype", "Plot Type", c("oblique", "ortho"), selected = "1d", multiple = FALSE, selectize = TRUE)
+               ),
+               column(2, 
+                 checkboxInput("absolute", "Absolute Value")
                )
+
              )
+
           #),
       #    tabPanel("Correlation tsne", plotOutput( "tsne.scores", click="point_click1", dblclick="point_dbl_click1", 
        #                                    hover="point_hover1", brush=brushOpts("point_brush1", resetOnNew=TRUE) ) ),
@@ -53,7 +72,7 @@ fluidPage(
            #        ) 
         #)
       ),
-      column(5,
+      column(4,
         DT::dataTableOutput('table')
       )
     )

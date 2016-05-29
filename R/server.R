@@ -37,14 +37,13 @@ wordcor.server <- function(input,output,session){
     selection$brushed <<- c()
   })    
 
-  #maxThreshold = max( rowSums(data$raw) )
-  #updateSliderInput(session, "threshold.scores", max=maxThreshold, step=maxThreshold/100)
+  
   
   
   
   #smoothed data depends on raw data
   smoothed <- reactive({
-    if(input$smoothing > 0 ){
+      if(input$smoothing > 0 ){
         fname <- sprintf("%s-smoothed-%.2f.Rdata", datafile, input$smoothing)
         if( file.exists( fname ) ){
           withProgress(message = 'Loading smoothed data', value = 0, {
@@ -78,12 +77,18 @@ wordcor.server <- function(input,output,session){
       else{
         list(years = minYear:maxYear, counts = data$raw, scaled=data$scaled)
       }
+      
   })
 
   #sliced data depends on smoothed data
   complete <- c() 
   sliced <- reactive({
      X <- smoothed()$counts
+     sumX <- rowSums(X) 
+     
+     #maxThreshold = round( max( sumX ), 2)
+     #updateSliderInput(session, "threshold.scores", max=maxThreshold, step=maxThreshold/100)
+     
      years = smoothed()$years
      if( length( selection$years$start ) > 0 ){
        index <- c()
@@ -98,7 +103,7 @@ wordcor.server <- function(input,output,session){
      Xs <- Xs / sqrt(ncol(Xs)-1)
      rownames(Xs) <- data$words
      rownames(X) <- data$words
-     index = which( complete.cases(Xs)  &  rowSums(X) > input$threshold.scores )
+     index = which( complete.cases(Xs)  &  sumX > input$threshold.scores )
 
      Xs <- Xs[index, ]
      X <- X[index, ]
@@ -313,9 +318,9 @@ wordcor.server <- function(input,output,session){
     if(input$corrplottype=="ortho"){
       a <- primary.sliced()$score %*% secondary.sliced()$score
       o <- secondary.sliced()$score - a * primary.sliced()$score
-      o / sqrt( sum( o^2 ) )
+      o <- o / sqrt( sum( o^2 ) )
     }
-    else if(input$corrplottype=="2d"){
+    else if(input$corrplottype=="oblique"){
       o <- secondary.sliced()$score 
     }
     o
@@ -513,36 +518,48 @@ wordcor.server <- function(input,output,session){
   ## Correaltion plot ##
   output$corr <- renderPlot({
     X = projected()
+    if(input$absolute){
+      X = abs(X)
+    }
     
     cols = rep("#00000010", nrow(X) )
     cols[ selection$brushed ] = "#66339950"
 
     pointtype = 19
-    if(input$corrplottype == "1d"){
-      pointtype="|"
-    }
+    par(mar=c(0.5, 0.5, 0.5, 0.5) )
     plot( y ~ x, data=X, type="p", xlim = c( -1.1, 1.1 ), ylim = c( -1.1, 1.1 ), asp=1, 
           pch=pointtype, col=cols, bty="n", axes=FALSE, xlab="", ylab="" )
     
     if( length(input$table_rows_selected) > 0 ){
       Sp <- cbind( sliced()$scores[ input$table_rows_selected, ] %*% primary.sliced()$score,
              sliced()$scores[ input$table_rows_selected, ] %*% ortho() )
+      if(input$absolute){
+        Sp = abs(Sp)
+      }
+
       points(Sp, pch=19, col="#0000FF")
     }
 
-    
-    points( rbind( primary.projected(), secondary.projected()  ), pch=19, col=c("red", "orange") )
+    if(input$absolute){
+      points( abs( rbind( primary.projected(), secondary.projected()  ) ), pch=19, col=c("red", "orange") )
+    }
+    else{
+      points( rbind( primary.projected(), secondary.projected()  ), pch=19, col=c("red", "orange") )
+    }
 
     if(input$corrplottype == "ortho" ){
       draw.circle(0,0, 1, nv=100, border="gray",col=NA, lty=1, lwd=2)
       lines(c(-1,1), c(0,0), col="black", lwd = 3)
-      lines(c(0,0), c(-1,1), col="black", lwd = 3)
-      lines(c(-0.5,0.5), c(-0.5,-0.5), col="black", lwd = 1)
-      lines(c(-0.5,0.5), c(0.5,0.5), col="black", lwd = 1)
-      lines(c(0.5,0.5), c(-0.5,0.5), col="black", lwd = 1)
-      lines(c(-0.5,-0.5), c(-0.5,0.5), col="black", lwd = 1)
+      lines( c(secondary.projected()[1],-secondary.projected()[1]), 
+             c(secondary.projected()[2],-secondary.projected()[2]), 
+             col="black", lwd = 3)
+      
+      #lines(c(-0.5,0.5), c(-0.5,-0.5), col="black", lwd = 1)
+      #lines(c(-0.5,0.5), c(0.5,0.5), col="black", lwd = 1)
+      lines(c(0.5,0.5), c(-0.1,0.1), col="black", lwd = 1)
+      lines(c(-0.5,-0.5), c(-0.1,0.1), col="black", lwd = 1)
     }
-    else if(input$corrplottype == "2d" ){
+    else if(input$corrplottype == "oblique" ){
       lines(c(-1,1), c(-1,-1), col="black", lwd = 2)
       lines(c(-1,1), c(-0.5,-0.5), col="black", lwd = 1)
       lines(c(-1,1), c(0,0), col="black", lwd = 3)
@@ -555,27 +572,105 @@ wordcor.server <- function(input,output,session){
       lines(c(0.5,0.5), c(-1,1), col="black", lwd = 1)
       lines(c(1,1), c(-1,1), col="black", lwd = 3)
     }
-    else{
-      lines(c(-1,1), c(0,0), col="black", lwd = 3)
-      lines(c(0,0), c(-0.09,0.09), col="black", lwd = 2)
-      lines(c(1,1), c(-0.12,0.12), col="black", lwd = 2)
-      lines(c(-0.5,-0.5), c(-0.06,0.06), col="black", lwd = 1)
-      lines(c(0.5,0.5), c(-0.06,0.06), col="black", lwd = 1)
-      lines(c(-1,-1), c(-0.12,0.12), col="black", lwd = 2)
-    }
 
-  }, width=500, height=500 )
+
+  } )
 
   
-  ## t-sne plots ##
+    ## Correaltion plot ##
+  output$corrprimary <- renderPlot({
+    X = gmra.scores() %*% primary.sliced()$score
+    if(input$absolute){
+      X = abs(X)
+    } 
+    cols = rep("#00000010", nrow(X) )
+    cols[ selection$brushed ] = "#66339950"
 
+    par(mar=c(0.5,0.5,0.5,0.5) )
+    pointtype="|"
+    plot( x=X, y=rep(0, length(X)), type="p", xlim = c( -1.1, 1.1 ), ylim = c( -1.1, 1.1 ), 
+          pch=pointtype, col=cols, bty="n", axes=FALSE, xlab="", ylab="" )
+    
+    if( length(input$table_rows_selected) > 0 ){
+      Sp <- cbind( sliced()$scores[ input$table_rows_selected, ] %*% primary.sliced()$score, rep(0, length(input$table_rows_selected) )  )
+      if(input$absolute){
+        Sp = abs(Sp)
+      }
+
+      points(Sp, pch=19, col="#0000FF")
+    }
+
+    if(input$absolute){
+      points( x = abs( c( 1, sum(primary.sliced()$score * secondary.sliced()$score) ) ), y = rep(0,2) , pch=19, col=c("red", "orange") )
+    }
+    else{
+      points( x = c( 1, sum(primary.sliced()$score * secondary.sliced()$score) ), y = rep(0,2) , pch=19, col=c("red", "orange") )
+    }
+
+    lines(c(-1,1), c(0,0), col="black", lwd = 3)
+    lines(c(0,0), c(-0.09,0.09), col="black", lwd = 2)
+    lines(c(1,1), c(-0.12,0.12), col="black", lwd = 2)
+    lines(c(-0.5,-0.5), c(-0.06,0.06), col="black", lwd = 1)
+    lines(c(0.5,0.5), c(-0.06,0.06), col="black", lwd = 1)
+    lines(c(-1,-1), c(-0.12,0.12), col="black", lwd = 2)
+
+  })
+
+
+    ## Correaltion plot ##
+  output$corrsecondary <- renderPlot({
+    par(mar=c(0.5,0.5,0.5,0.5) )
+    X = gmra.scores() %*% secondary.sliced()$score
+    if(input$absolute){
+      X = abs(X)
+    }
+
+    cols = rep("#00000010", nrow(X) )
+    cols[ selection$brushed ] = "#66339950"
+
+    pointtype="|"
+    plot( x=X, y=rep(0, length(X) ), type="p", xlim = c( -1.1, 1.1 ), ylim = c( -1.1, 1.1 ), 
+          pch=pointtype, col=cols, bty="n", axes=FALSE, xlab="", ylab="" )
+    
+    if( length(input$table_rows_selected) > 0 ){
+      Sp <- cbind( sliced()$scores[ input$table_rows_selected, ] %*% secondary.sliced()$score, rep(0, length(input$table_rows_selected) ) )
+      if(input$absolute){
+        Sp = abs(Sp)
+      }
+      points(Sp, pch=19, col="#0000FF")
+    }
+
+    if(input$absolute){
+      points( x = abs(  c( sum( primary.sliced()$score * secondary.sliced()$score), 1 ) ), y = rep(0,2), pch=19, col=c("red", "orange") )
+    }
+    else{
+      points( x = c( sum( primary.sliced()$score * secondary.sliced()$score), 1 ), y = rep(0,2), pch=19, col=c("red", "orange") )
+    }
+
+    lines(c(-1,1), c(0,0), col="black", lwd = 3)
+    lines(c(0,0), c(-0.09,0.09), col="black", lwd = 2)
+    lines(c(1,1), c(-0.12,0.12), col="black", lwd = 2)
+    lines(c(-0.5,-0.5), c(-0.06,0.06), col="black", lwd = 1)
+    lines(c(0.5,0.5), c(-0.06,0.06), col="black", lwd = 1)
+    lines(c(-1,-1), c(-0.12,0.12), col="black", lwd = 2)
+
+  })
+  
+
+
+
+
+
+
+
+  ## t-sne plots ##
   output$tsne.scores <- renderPlot({
     X <-  tsne.scores()
     cols = rep("#00000010", nrow(X) )
     cols[ selection$brushed ] = "#66339950"
     plot( y ~ x, X, type="p",asp=1, pch=19, col=cols, bty="n", axes=FALSE,
          xlab="", ylab="" )
-  }, width=500, height=500 )
+  } )
 
 
 
@@ -586,7 +681,9 @@ wordcor.server <- function(input,output,session){
     plot( y ~ x, X, type="p", asp=1, pch=19, col=cols, bty="n", axes=FALSE,
          xlab="", ylab="" )
 
-  }, width=500, height=500 )
+  } )
+
+
 
 
 
