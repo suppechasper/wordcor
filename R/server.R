@@ -29,12 +29,17 @@ wordcor.server <- function(input,output,session){
 
   ## Reactive variables ##
   selection <- reactiveValues()
-  selection$brushed <- c()
+  selection$brushed.secondary <- c()
+  selection$brushed.primary <- c()
   selection$years <- list( start = c(), end = c() )
+ 
+
+
     
   #reset selection when gmra scale is changed
   scale.score.reset <- observeEvent( input$scale.scores, {
-    selection$brushed <<- c()
+    selection$brushed.primary <<- c()
+    selection$brushed.secondary <<- c()
   })    
 
   
@@ -122,7 +127,8 @@ wordcor.server <- function(input,output,session){
   })
   
   gmra.scores <- reactive({
-    isolate( selection$brushed <<- c() )
+    isolate( selection$brushed.primary <<- c() )
+    isolate( selection$brushed.secondary <<- c() )
     gmra.centers(gmra$scores(), input$scale.scores)
   })
 
@@ -337,8 +343,28 @@ wordcor.server <- function(input,output,session){
     X <- gmra.scores()
     Z = data.frame( x = X %*% primary.sliced()$score, 
                     y = X %*% ortho() )
+    if(input$absolute){
+      Z = abs(Z)
+    }
     Z
   } ) 
+
+  projected.primary <- reactive( {
+    X  = gmra.scores() %*% primary.sliced()$score
+    if(input$absolute){
+      X = abs(X)
+    }
+    data.frame(x=X, y = rep(0, length(X) ) )
+  } ) 
+  
+  projected.secondary<- reactive( {
+    X = gmra.scores() %*% secondary.sliced()$score
+    if(input$absolute){
+      X = abs(X)
+    }
+    data.frame(x=X, y = rep(0, length(X) ) )
+  } ) 
+
 
 
 
@@ -405,33 +431,6 @@ wordcor.server <- function(input,output,session){
     }
   })
 
-  ob1b <- observeEvent(input$point_click1, {
-    if( !is.null( input$point_click1) ){
-      ev = input$point_click1
-      tmp <- myNearPoints( tsne.scores(), ev, xvar="x", yvar="y", threshold = 10, maxpoints = 1)
-      if( length(tmp) == 1){
-         sel <- raw.index.scores(tmp)
-         if(length(sel) == 1){
-           projector$primary <<- data$raw[sel, , drop=FALSE]
-         }
-         else{
-           updateTextInput(session, "primary", value="averaged word")
-           projector$primary <<- apply( data$raw[sel, ], 2 , mean )
-         }
-
-      }
-    }
-  })
-
-#  ob1c <- observe({
-#    if( !is.null( input$point_click2) ){
-#      ev = input$point_click2
-#      tmp <- myNearPoints( tsne(), ev, xvar="x", yvar="y", threshold = 10, maxpoints = 1)
-#      if( length(tmp) == 1){
-#        #selection$primary <<- tmp
-#      }
-#    }
-#  })
 
   ob2a <- observeEvent(input$point_dbl_click, {
      ev = NULL
@@ -452,33 +451,7 @@ wordcor.server <- function(input,output,session){
     }
   })
 
-  ob2b <- observeEvent(input$point_dbl_click1, {
-    if( !is.null( input$point_dbl_click1) ){
-      ev = input$point_dbl_click1
-      tmp <- myNearPoints(  tsne.scores(), ev, xvar="x", yvar="y", threshold = 10, maxpoints = 1)
-      if( length(tmp) == 1){
-         sel <- raw.index.scores(tmp)
-         if(length(sel) == 1){
-           projector$secondary <<- data$raw[sel, , drop=FALSE]
-         }
-         else{
-           updateTextInput(session, "secondary", value="averaged word")
-           projector$secondary <<- apply( data$raw[sel, ], 2 , mean )
-         }
-      }
 
-    }
-  })
-
-#  ob2c <- observe({
-#    if( !is.null( input$point_dbl_click2) ){
-#      ev = input$point_dbl_click2
-#      tmp <- myNearPoints( embeddings$tsne, ev, xvar="x", yvar="y", threshold = 10, maxpoints = 1)
-#      if( length(tmp) == 1){
-#        selection$secondary <<- tmp
-#      }
-#    }
-#  })
 
 
   #point brushing
@@ -493,43 +466,49 @@ wordcor.server <- function(input,output,session){
     }
   })
 
-  ob3b <- observeEvent(input$point_brush1, {
-    if( !is.null( input$point_brush1) ){
-      ev = input$point_brush1
-      tmp <- myBrushedPoints( tsne.scores(), ev, xvar="x", yvar="y")
+  ob.primary.brush <- observeEvent(input$primary_brush, {
+    if( !is.null(input$primary_brush) ){
+      ev = input$primary_brush
+      tmp <- myBrushedPoints( isolate( projected.primary()  ), ev, xvar="x", yvar="y")
       if(length(tmp) > 0 ){
-        selection$brushed <<- tmp
+        selection$brushed.primary <<- tmp
       }
+
     }
   })
 
-#  ob3c <- observe({
-#    if( !is.null( input$point_brush2) ){
-#      ev = input$point_brush2
-#      tmp <- myBrushedPoints( tsne(), ev, xvar="x", yvar="y")
-#      if(length(tmp) > 0 ){
-#        selection$brushed <<- tmp
-#      }
-#    }
-#  })
+  ob.secondary.brush <- observeEvent(input$secondary_brush, {
+    if( !is.null(input$secondary_brush) ){
+      ev = input$secondary_brush
+      tmp <- myBrushedPoints( isolate( projected.secondary() ), ev, xvar="x", yvar="y")
+      if(length(tmp) > 0 ){
+        selection$brushed.secondary <<- tmp
+      }
+
+    }
+  })
+
+
+
 
 
 
   ## Correaltion plot ##
   output$corr <- renderPlot({
     X = projected()
-    if(input$absolute){
-      X = abs(X)
-    }
+
     
     cols = rep("#00000010", nrow(X) )
-    cols[ selection$brushed ] = "#66339950"
+    cols[ selection$brushed.primary ] = "#0000FF50"
+    cols[ selection$brushed.secondary ] = "#0000FF50"
 
     pointtype = 19
     par(mar=c(0.5, 0.5, 0.5, 0.5) )
     plot( y ~ x, data=X, type="p", xlim = c( -1.1, 1.1 ), ylim = c( -1.1, 1.1 ), asp=1, 
           pch=pointtype, col=cols, bty="n", axes=FALSE, xlab="", ylab="" )
-    
+   
+    if( length(input$table_rows_selected) > 0 ){
+    } 
     if( length(input$table_rows_selected) > 0 ){
       Sp <- cbind( sliced()$scores[ input$table_rows_selected, ] %*% primary.sliced()$score,
              sliced()$scores[ input$table_rows_selected, ] %*% ortho() )
@@ -579,16 +558,13 @@ wordcor.server <- function(input,output,session){
   
     ## Correaltion plot ##
   output$corrprimary <- renderPlot({
-    X = gmra.scores() %*% primary.sliced()$score
-    if(input$absolute){
-      X = abs(X)
-    } 
-    cols = rep("#00000010", nrow(X) )
-    cols[ selection$brushed ] = "#66339950"
+    X = projected.primary() 
 
+    cols = rep("#00000010", nrow(X) )
+    
     par(mar=c(0.5,0.5,0.5,0.5) )
     pointtype="|"
-    plot( x=X, y=rep(0, length(X)), type="p", xlim = c( -1.1, 1.1 ), ylim = c( -1.1, 1.1 ), 
+    plot( y ~ x, data=X, type="p", xlim = c( -1.1, 1.1 ), ylim = c( -1.1, 1.1 ), 
           pch=pointtype, col=cols, bty="n", axes=FALSE, xlab="", ylab="" )
     
     if( length(input$table_rows_selected) > 0 ){
@@ -620,16 +596,13 @@ wordcor.server <- function(input,output,session){
     ## Correaltion plot ##
   output$corrsecondary <- renderPlot({
     par(mar=c(0.5,0.5,0.5,0.5) )
-    X = gmra.scores() %*% secondary.sliced()$score
-    if(input$absolute){
-      X = abs(X)
-    }
+    X = projected.secondary()
+
 
     cols = rep("#00000010", nrow(X) )
-    cols[ selection$brushed ] = "#66339950"
 
     pointtype="|"
-    plot( x=X, y=rep(0, length(X) ), type="p", xlim = c( -1.1, 1.1 ), ylim = c( -1.1, 1.1 ), 
+    plot( y~x,  data=X,  type="p", xlim = c( -1.1, 1.1 ), ylim = c( -1.1, 1.1 ), 
           pch=pointtype, col=cols, bty="n", axes=FALSE, xlab="", ylab="" )
     
     if( length(input$table_rows_selected) > 0 ){
@@ -641,10 +614,12 @@ wordcor.server <- function(input,output,session){
     }
 
     if(input$absolute){
-      points( x = abs(  c( sum( primary.sliced()$score * secondary.sliced()$score), 1 ) ), y = rep(0,2), pch=19, col=c("red", "orange") )
+      points( x = abs(  c( sum( primary.sliced()$score * secondary.sliced()$score), 1 ) ), 
+              y = rep(0,2), pch=19, col=c("red", "orange") )
     }
     else{
-      points( x = c( sum( primary.sliced()$score * secondary.sliced()$score), 1 ), y = rep(0,2), pch=19, col=c("red", "orange") )
+      points( x = c( sum( primary.sliced()$score * secondary.sliced()$score), 1 ), 
+              y = rep(0,2), pch=19, col=c("red", "orange") )
     }
 
     lines(c(-1,1), c(0,0), col="black", lwd = 3)
@@ -661,35 +636,9 @@ wordcor.server <- function(input,output,session){
 
 
 
-
-
-  ## t-sne plots ##
-  output$tsne.scores <- renderPlot({
-    X <-  tsne.scores()
-    cols = rep("#00000010", nrow(X) )
-    cols[ selection$brushed ] = "#66339950"
-    plot( y ~ x, X, type="p",asp=1, pch=19, col=cols, bty="n", axes=FALSE,
-         xlab="", ylab="" )
-  } )
-
-
-
-  output$tsne <- renderPlot({
-    X <- tsne()
-    cols = rep("#00000010", nrow(X) )
-    cols[ selection$brushed ] = "#FF00FF50"
-    plot( y ~ x, X, type="p", asp=1, pch=19, col=cols, bty="n", axes=FALSE,
-         xlab="", ylab="" )
-
-  } )
-
-
-
-
-
-  #Tbale output for slected points
+  #Table output for slected points
   output$table <- renderDataTable({
-    sel <- gmra.index.scores( selection$brushed )
+    sel <- gmra.index.scores( unique( c(selection$brushed.primary, selection$brushed.secondary) ) )
     corp <- sliced()$scores[sel, ]  %*% primary.sliced()$score
     cors <- sliced()$scores[sel, ]  %*% secondary.sliced()$score
     words <- rownames( sliced()$scores )
@@ -702,7 +651,7 @@ wordcor.server <- function(input,output,session){
 
   #Scaled timeline smoothed
   output$graph.scaled <- renderPlot({
-    sel <- raw.index.scores( selection$brushed )
+    sel <- raw.index.scores( unique( c(selection$brushed.primary, selection$brushed.secondary) )  )
     
     X <- smoothed()$scaled 
     years <- smoothed()$years
@@ -758,7 +707,7 @@ wordcor.server <- function(input,output,session){
 
   #Counts timeline smoothed
   output$graph.raw <- renderPlot({
-    sel <- raw.index.scores( selection$brushed )
+    sel <- raw.index.scores( unique( c(selection$brushed.primary, selection$brushed.secondary) ) )
     X <- smoothed()$counts 
     years <- smoothed()$years
    

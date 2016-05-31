@@ -29,7 +29,7 @@ fluidPage(
       ),
       column(6,
          plotOutput( "corrprimary", click="point_click", dblclick="point_dbl_click",
-                                           hover="point_hover", brush=brushOpts("point_brush", resetOnNew=TRUE), width="100%", height=50 )
+                                           hover="point_hover", brush=brushOpts("primary_brush", resetOnNew=TRUE), width="100%", height=50 )
       )
     ),
     fluidRow(
@@ -38,7 +38,7 @@ fluidPage(
       ),
       column(6, 
          plotOutput( "corrsecondary", click="point_click", dblclick="point_dbl_click",
-                                           hover="point_hover", brush=brushOpts("point_brush", resetOnNew=TRUE), width="100%", height=50 )
+                                           hover="point_hover", brush=brushOpts("secondary_brush", resetOnNew=TRUE), width="100%", height=50 )
       )
     ),
     fluidRow(
@@ -46,7 +46,7 @@ fluidPage(
         #tabsetPanel(
          # tabPanel("Corrleation",
              plotOutput( "corr", click="point_click", dblclick="point_dbl_click",
-                                           hover="point_hover", brush=brushOpts("point_brush", resetOnNew=TRUE),  height=400, width=400 ),
+                                           hover="point_hover",  height=400, width=400 ),
              fluidRow(
                column(2, 
                  sliderInput("scale.scores", "Scale:", min=0, max=20, step = 1, value=5)
