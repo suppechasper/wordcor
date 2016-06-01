@@ -88,6 +88,8 @@ wordcor.server <- function(input,output,session){
   #sliced data depends on smoothed data
   complete <- c() 
   sliced <- reactive({
+     isolate( selection$brushed.primary <<- c() )
+     isolate( selection$brushed.secondary <<- c() )
      X <- smoothed()$counts
      sumX <- rowSums(X) 
      
@@ -214,11 +216,13 @@ wordcor.server <- function(input,output,session){
   #update primary and seocndary text inputs
   primaryObserve <- observe({
     w <- row.names(projector$primary)
+    isolate( selection$brushed.primary <<- c() )
     updateTextInput(session, "primary", value = w)
   })
 
   secondaryObserve <- observe({
     w <- row.names(projector$secondary)
+    isolate( selection$brushed.secondary <<- c() )
     updateTextInput(session, "secondary", value = w)
   })
 
@@ -507,17 +511,15 @@ wordcor.server <- function(input,output,session){
     plot( y ~ x, data=X, type="p", xlim = c( -1.1, 1.1 ), ylim = c( -1.1, 1.1 ), asp=1, 
           pch=pointtype, col=cols, bty="n", axes=FALSE, xlab="", ylab="" )
    
-    if( length(input$table_rows_selected) > 0 ){
-    } 
-    if( length(input$table_rows_selected) > 0 ){
-      Sp <- cbind( sliced()$scores[ input$table_rows_selected, ] %*% primary.sliced()$score,
-             sliced()$scores[ input$table_rows_selected, ] %*% ortho() )
-      if(input$absolute){
-        Sp = abs(Sp)
-      }
-
-      points(Sp, pch=19, col="#0000FF")
-    }
+    #if( length(input$table_rows_selected) > 0 ){
+    #  Sp <- cbind( sliced()$scores[ input$table_rows_selected, ] %*% primary.sliced()$score,
+    #         sliced()$scores[ input$table_rows_selected, ] %*% ortho() )
+    #  if(input$absolute){
+    #    Sp = abs(Sp)
+    #  }
+#
+#      points(Sp, pch=19, col="#0000FF")
+#    }
 
     if(input$absolute){
       points( abs( rbind( primary.projected(), secondary.projected()  ) ), pch=19, col=c("red", "orange") )
@@ -567,14 +569,14 @@ wordcor.server <- function(input,output,session){
     plot( y ~ x, data=X, type="p", xlim = c( -1.1, 1.1 ), ylim = c( -1.1, 1.1 ), 
           pch=pointtype, col=cols, bty="n", axes=FALSE, xlab="", ylab="" )
     
-    if( length(input$table_rows_selected) > 0 ){
-      Sp <- cbind( sliced()$scores[ input$table_rows_selected, ] %*% primary.sliced()$score, rep(0, length(input$table_rows_selected) )  )
-      if(input$absolute){
-        Sp = abs(Sp)
-      }
-
-      points(Sp, pch=19, col="#0000FF")
-    }
+    #if( length(input$table_rows_selected) > 0 ){
+    #  Sp <- cbind( sliced()$scores[ input$table_rows_selected, ] %*% primary.sliced()$score, rep(0, length(input$table_rows_selected) )  )
+    #  if(input$absolute){
+    #    Sp = abs(Sp)
+    #  }
+#
+#      points(Sp, pch=19, col="#0000FF")
+#    }
 
     if(input$absolute){
       points( x = abs( c( 1, sum(primary.sliced()$score * secondary.sliced()$score) ) ), y = rep(0,2) , pch=19, col=c("red", "orange") )
@@ -605,13 +607,13 @@ wordcor.server <- function(input,output,session){
     plot( y~x,  data=X,  type="p", xlim = c( -1.1, 1.1 ), ylim = c( -1.1, 1.1 ), 
           pch=pointtype, col=cols, bty="n", axes=FALSE, xlab="", ylab="" )
     
-    if( length(input$table_rows_selected) > 0 ){
-      Sp <- cbind( sliced()$scores[ input$table_rows_selected, ] %*% secondary.sliced()$score, rep(0, length(input$table_rows_selected) ) )
-      if(input$absolute){
-        Sp = abs(Sp)
-      }
-      points(Sp, pch=19, col="#0000FF")
-    }
+    #if( length(input$table_rows_selected) > 0 ){
+    #  Sp <- cbind( sliced()$scores[ input$table_rows_selected, ] %*% secondary.sliced()$score, rep(0, length(input$table_rows_selected) ) )
+     # if(input$absolute){
+     #   Sp = abs(Sp)
+     # }
+     # points(Sp, pch=19, col="#0000FF")
+    #}
 
     if(input$absolute){
       points( x = abs(  c( sum( primary.sliced()$score * secondary.sliced()$score), 1 ) ), 
