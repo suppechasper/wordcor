@@ -78,9 +78,53 @@ wordcor.server <- function(input,output,session){
             res
           })
         }
+
+
       }
       else{
         list(years = minYear:maxYear, counts = data$raw, scaled=data$scaled)
+      }
+      
+  })
+
+  smoothed.derivative <- reactive({
+      if(input$smoothing > 0 ){
+        fname <- sprintf("%s-smoothed-%.2f-derivative.Rdata", datafile, input$smoothing)
+        if( file.exists( fname ) ){
+          withProgress(message = 'Loading smoothed derivative data', value = 0, {
+            load(fname)
+            res
+          })
+        }
+        else{
+          withProgress(message = 'Smoothing derivative', value = 0, {
+            years <- c()
+            n <- ncol(data$raw) #round( min( ncol(data$raw), ncol(data$raw) / input$smoothing)  )
+
+            positive <- 0
+            negative <- 0
+            for(i in 1:nrow(data$raw) ){
+              incProgress( 1 / nrow(data$raw), detail = data$words[i] )
+              lp <-  locpoly( x = minYear:maxYear, data$raw[i, ], bandwidth = input$smoothing, 
+                            gridsize=n, range.x=c(minYear, maxYear), drv=1 )
+              tmp = lp$y
+              tmp[tmp<0] = 0
+              positive <- positive + tmp 
+              tmp = lp$y
+              tmp[tmp>0] = 0
+              negative <- negative + tmp 
+              years <- lp$x
+            }
+            res <- list(years = years, positive=positive, negative=negative)
+            save(res, file=fname)
+            res
+          })
+        }
+
+
+      }
+      else{
+        list(years = minYear:maxYear, positive = NULL, negative = NULL)
       }
       
   })
@@ -681,6 +725,10 @@ wordcor.server <- function(input,output,session){
     s <- s /max(s) 
     lines(x=years, s, col="orange", lwd=3)
 
+
+
+
+
     if(length(sel) > 0 ){
       lines(x=years, meanC/maxC, col="#00000060", lwd=2)
       lines(x=years, (meanC + sdC) /maxC, col="#00000060", lwd=2)
@@ -695,6 +743,13 @@ wordcor.server <- function(input,output,session){
         lines(x=years, X[sel[i], ], col="blue", lwd=2)
       }
     } 
+
+    if( !is.null(smoothed.derivative()$positive) ){
+      dmax <- max(abs( c(smoothed.derivative()$positive,smoothed.derivative()$negative) ) )
+      points(smoothed.derivative()$years, smoothed.derivative()$positive/dmax, pch=19, col="steelblue2")
+      points(smoothed.derivative()$years, abs(smoothed.derivative()$negative/dmax), pch=19, col="gold")
+    }
+
 
     if( length(selection$years$start) > 0 ){
       for(i in 1:length(selection$years$start) ){
