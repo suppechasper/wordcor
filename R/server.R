@@ -100,6 +100,7 @@ wordcor.server <- function(input,output,session){
           withProgress(message = 'Smoothing derivative', value = 0, {
             years <- c()
             n <- ncol(data$raw) #round( min( ncol(data$raw), ncol(data$raw) / input$smoothing)  )
+            derivs <- matrix(nrow=nrow(data$raw), ncol=n) 
 
             positive <- 0
             negative <- 0
@@ -114,8 +115,9 @@ wordcor.server <- function(input,output,session){
               tmp[tmp>0] = 0
               negative <- negative + tmp 
               years <- lp$x
+              derivs[i, ] = lp$y
             }
-            res <- list(years = years, positive=positive, negative=negative)
+            res <- list(years = years, positive=positive, negative=negative, derivs=derivs)
             save(res, file=fname)
             res
           })
@@ -747,7 +749,7 @@ wordcor.server <- function(input,output,session){
     if( !is.null(smoothed.derivative()$positive) ){
       dmax <- max(abs( c(smoothed.derivative()$positive,smoothed.derivative()$negative) ) )
       points(smoothed.derivative()$years, smoothed.derivative()$positive/dmax, pch=19, col="steelblue2")
-      points(smoothed.derivative()$years, abs(smoothed.derivative()$negative/dmax), pch=19, col="gold")
+      points(smoothed.derivative()$years, abs(smoothed.derivative()$negative/dmax), pch=19, col="gold2")
     }
 
 
