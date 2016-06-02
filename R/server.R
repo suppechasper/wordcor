@@ -748,8 +748,8 @@ wordcor.server <- function(input,output,session){
 
     if( !is.null(smoothed.derivative()$positive) ){
       dmax <- max(abs( c(smoothed.derivative()$positive,smoothed.derivative()$negative) ) )
-      points(smoothed.derivative()$years, smoothed.derivative()$positive/dmax, pch=19, col="steelblue2")
-      points(smoothed.derivative()$years, abs(smoothed.derivative()$negative/dmax), pch=19, col="gold2")
+      points(smoothed.derivative()$years, smoothed.derivative()$positive/dmax, pch=19, col="snow3")
+      points(smoothed.derivative()$years, abs(smoothed.derivative()$negative/dmax), pch=19, col="snow4")
     }
 
 
