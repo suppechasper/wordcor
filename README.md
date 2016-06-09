@@ -16,7 +16,7 @@ Shiny application for word correlation exploration.
 1. Start R.
 2. In R run the commands:
    1. library(WordCor)
-   2. wordcor("google-nouns-scaled-from-1800")
+   2. wordcor()
 
 Note wordcor will save smoothed version of the data in the current directory
 you run wordcor(). If your it in the same directory again it will reuse the
