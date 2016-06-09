@@ -1,5 +1,5 @@
 # Word Correlation Explorer
-Shiny app for word correlation exploration.
+Shiny application for word correlation exploration.
 
 ## Installation ##
 
@@ -18,29 +18,40 @@ Shiny app for word correlation exploration.
    1. library(WordCor)
    2. wordcor("google-nouns-scaled-from-1800")
 
-Note wordcor will save smoothed version of the data in the current diretory you run wordcor(). If your it in the same directory again it will reuse the smoothed versions and not recompute them.
+Note wordcor will save smoothed version of the data in the current directory
+you run wordcor(). If your it in the same directory again it will reuse the
+smoothed versions and not recompute them.
 
 ## Usage ##
-The application will prompt you which data set to use. Currently there is six options of variatiosn from googles 1grams data set. Either teh complete data set or restructed to the years after 1800. For both thre is three options, orohgonal data set, relative scaling (each years relative frequencey) and weighted relative freuqency whihc scales by the number of different words used per year.
+The application will prompt you which data set to use. Currently there is six
+options of variations from the Google 1grams data set. Either the complete data
+set or restricted to the years after 1800. For both there are three options,
+original data set, relative scaling (each years relative frequency) and
+weighted relative frequency with additional scaling by the number of different
+words used per year.
 
-The apps user interface consists of multiple linked displays. 
+The application user interface consists of multiple linked displays. 
 
 1. The top graphs shows the primary (red) and secondary (orange) selected words as well as selections made in the plots below. The dots are the positive (light gray) and negative (dark gray) derivative summed over all words. 
-  1. Brushing years will restrict correlation computations to the slected years. Reset years will select all years.
+  1. Brushing years will restrict correlation computations to the selected years. Reset years will select all years.
   2. Clicking will select the top 20 words with the most positive and most negative derivatives in that year.
 
-2. The primary and secondary selected word and the corrleation to all other words represented on a line from -1 to +1 correlation. 
+2. The primary and secondary selected word and the correlation to all other words represented on a line from -1 to +1 correlation. 
   1. The primary and secondary word can be changed through text input or clicking (for primary) or double clicking (for secondary) on a word represented on th line representation.
 
 3. A correlation plot of with respect to primary and secondary.  
    1. The primary and secondary word can be changed through clicking (for primary) or double clicking (for secondary) on points in the scatter plot.
    2. Brushing selects points to be shown in the table on the right and in the graphs above.
-   3. Scale selects the level of clustering, i.e. if individual words should be shown in the plot (large scale) or words wwith similar correlation be clustered together (small scale).
-   4. Plot type selects the type of plot. Oblique is putting the primary and secondary correlation lines orthogonal to each otherand plotting each point at the corresponding correlation values to the primary and secondary. Ortho better preserves pairwise relationships in the plot, dor details see http://mckennapsean.com/scorrplot/ .
+   3. Scale selects the level of clustering, i.e. if individual words should be shown in the plot (large scale) or words with similar correlation be clustered together (small scale).
+   4. Plot type selects the type of plot. Oblique is putting the primary and
+      secondary correlation lines orthogonal to each other and plotting each
+point at the corresponding correlation values to the primary and secondary.
+Ortho better preserves pairwise relationships in the plot (for details see
+http://mckennapsean.com/scorrplot/ ).
    5. Threshold removes words with low counts.
-   6. Absolute Value selects whether posiutive and negative correlation should be distignuished or not.
+   6. Absolute Value selects whether positive and negative correlation should be distinguished or not.
 
 4. Table shows selected words in the correlation plot.
-   1. Clicking on rows will highlight the words in the graphs. Selection in the correlation table appear blue in the derivative of the score table darkgreen and derivative of the raw data in light green. 
+   1. Clicking on rows will highlight the words in the graphs. Selection in the correlation table appear blue in the derivative of the score table dark green and derivative of the raw data in light green. 
 
   
