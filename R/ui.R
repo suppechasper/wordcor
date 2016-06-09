@@ -7,9 +7,11 @@ wordcor.ui <- function(){
 fluidPage(
 
     tabsetPanel(
-       tabPanel("Normalized", plotOutput("graph.scaled", brush=brushOpts( "graph1_brush", 
-                                                                         direction = "x", resetOnNew=TRUE) ) ),
-       tabPanel("Relative Counts", plotOutput("graph.raw", brush=brushOpts( "graph2_brush", 
+       tabPanel("Normalized Score", plotOutput("graph.scaled", click="graph1_click",
+                                         brush=brushOpts( "graph1_brush",
+                                                         direction = "x",
+                                                         resetOnNew=TRUE) ) ),
+       tabPanel("Raw Data", plotOutput("graph.raw", brush=brushOpts( "graph2_brush", 
                                                                          direction = "x", resetOnNew=TRUE) ) ) 
     ),
     fluidRow(
@@ -73,7 +75,11 @@ fluidPage(
         #)
       ),
       column(4,
-        DT::dataTableOutput('table')
+        tabsetPanel(
+          tabPanel( "Corrlations", DT::dataTableOutput('table') ),
+          tabPanel( "Derivs Raw", DT::dataTableOutput('sderivtable') ),
+          tabPanel( "Derivs Score", DT::dataTableOutput('derivtable') )
+        )
       )
     )
 )

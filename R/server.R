@@ -31,6 +31,8 @@ wordcor.server <- function(input,output,session){
   selection <- reactiveValues()
   selection$brushed.secondary <- c()
   selection$brushed.primary <- c()
+  selection$derivs <- NULL
+  selection$derivYear <- NULL
   selection$years <- list( start = c(), end = c() )
  
 
@@ -49,7 +51,7 @@ wordcor.server <- function(input,output,session){
   #smoothed data depends on raw data
   smoothed <- reactive({
       if(input$smoothing > 0 ){
-        fname <- sprintf("%s-smoothed-%.2f.Rdata", datafile, input$smoothing)
+        fname <- sprintf("%s-smoothed-%.2f.rda", datafile, input$smoothing)
         if( file.exists( fname ) ){
           withProgress(message = 'Loading smoothed data', value = 0, {
             load(fname)
@@ -89,7 +91,7 @@ wordcor.server <- function(input,output,session){
 
   smoothed.derivative <- reactive({
       if(input$smoothing > 0 ){
-        fname <- sprintf("%s-smoothed-%.2f-derivative.Rdata", datafile, input$smoothing)
+        fname <- sprintf("%s-smoothed-%.2f-derivative.rda", datafile, input$smoothing)
         if( file.exists( fname ) ){
           withProgress(message = 'Loading smoothed derivative data', value = 0, {
             load(fname)
@@ -108,16 +110,31 @@ wordcor.server <- function(input,output,session){
               incProgress( 1 / nrow(data$raw), detail = data$words[i] )
               lp <-  locpoly( x = minYear:maxYear, data$raw[i, ], bandwidth = input$smoothing, 
                             gridsize=n, range.x=c(minYear, maxYear), drv=1 )
-              tmp = lp$y
-              tmp[tmp<0] = 0
-              positive <- positive + tmp 
-              tmp = lp$y
-              tmp[tmp>0] = 0
-              negative <- negative + tmp 
-              years <- lp$x
+             
+              years <- lp$x 
               derivs[i, ] = lp$y
+              
+              
             }
-            res <- list(years = years, positive=positive, negative=negative, derivs=derivs)
+            derivs.n <- t( t(derivs) / sqrt( rowSums(smoothed()$counts^2) ) )
+           
+            positive <- derivs
+            positive[positive<0] = 0
+            positive = colSums(positive)
+            negative <- derivs
+            negative[negative>0] = 0
+            negative = colSums(negative)
+
+            positive.n <- derivs.n
+            positive.n[positive.n<0] = 0
+            positive.n = colSums(positive.n)
+            negative.n <- derivs.n
+            negative.n[negative.n>0] = 0
+            negative.n = colSums(negative.n)
+
+
+            res <- list(years = years, positive=positive, negative=negative, derivs=derivs, 
+                        derivs.scaled = derivs.n, positive.scaled=positive.n, negative.scaled=negative.n)
             save(res, file=fname)
             res
           })
@@ -126,7 +143,7 @@ wordcor.server <- function(input,output,session){
 
       }
       else{
-        list(years = minYear:maxYear, positive = NULL, negative = NULL)
+        list(years = minYear:maxYear)
       }
       
   })
@@ -444,14 +461,34 @@ wordcor.server <- function(input,output,session){
          }
        }
        yend <- c(yend, index[ length(index) ] )
-       
-       selection$years <<- list(start=ystart, end=yend)
+       if(ystart < yend){ 
+         selection$years <<- list(start=ystart, end=yend)
+       }
      }
   }
 
   obYears1 <- observeEvent(input$graph1_brush, {
      selectYears(input$graph1_brush)     
   })
+
+
+  ob.graph1.click <- observeEvent(input$graph1_click, {
+    if( !is.null(input$graph1_click) ){
+      xy <- which.min( abs(smoothed.derivative()$years-input$graph1_click$x) )
+      selection$derivYear <<- input$graph1_click$x
+
+      vals <- smoothed.derivative()$derivs[ ,xy]
+      dor <- order( vals )
+      index <- dor[c(1:20, length(dor):(length(dor)-20) )]
+      selection$derivs <<- list(index =index, vals=vals[index])
+      
+      vals <- smoothed.derivative()$derivs.scaled[ ,xy]
+      dor <- order( vals )
+      index <- dor[c(1:20, length(dor):(length(dor)-20) )]
+      selection$derivs.scaled <<- list(index=index, vals=vals[index])
+    }
+  })
+
 
   obYears2 <- observeEvent(input$graph2_brush, {
      selectYears(input$graph2_brush)     
@@ -695,6 +732,19 @@ wordcor.server <- function(input,output,session){
     DT::datatable(A)
   } )
 
+  output$derivtable <- renderDataTable({
+    words <- rownames( sliced()$scores )
+    A <- cbind(words[ selection$derivs$index ], signif(selection$derivs$vals, 3) )
+    colnames(A) <- c("word", "derivs" )
+    DT::datatable(A)
+  } )
+
+  output$sderivtable <- renderDataTable({
+    words <- rownames( sliced()$scores )
+    A <- cbind(words[ selection$derivs.scaled$index ], signif(selection$derivs.scaled$vals, 3) )
+    colnames(A) <- c("word", "derivs" )
+    DT::datatable(A)
+  } )
 
 
   #Scaled timeline smoothed
@@ -744,12 +794,27 @@ wordcor.server <- function(input,output,session){
       for(i in 1:length(sel) ){
         lines(x=years, X[sel[i], ], col="blue", lwd=2)
       }
-    } 
+    }
+
+    sel  = input$sderivtable_rows_selected
+    if( length(sel) > 0 ){
+      for(i in 1:length(sel) ){
+        lines(x=years, X[sel[i], ], col="forestgreen", lwd=2)
+      }
+    }  
+
+    sel  = input$derivtable_rows_selected
+    if( length(sel) > 0 ){
+      for(i in 1:length(sel) ){
+        lines(x=years, X[sel[i], ], col="olivedrab1", lwd=2)
+      }
+    }   
 
     if( !is.null(smoothed.derivative()$positive) ){
-      dmax <- max(abs( c(smoothed.derivative()$positive,smoothed.derivative()$negative) ) )
-      points(smoothed.derivative()$years, smoothed.derivative()$positive/dmax, pch=19, col="snow3")
-      points(smoothed.derivative()$years, abs(smoothed.derivative()$negative/dmax), pch=19, col="snow4")
+      abline(v = selection$derivYear) 
+      dmax <- max(abs( c(smoothed.derivative()$positive.scaled, smoothed.derivative()$negative.scaled) ) )
+      points(smoothed.derivative()$years, smoothed.derivative()$positive.scaled/dmax, pch=19, col="snow3")
+      points(smoothed.derivative()$years, abs(smoothed.derivative()$negative.scaled/dmax), pch=19, col="snow4")
     }
 
 
@@ -767,6 +832,7 @@ wordcor.server <- function(input,output,session){
   #Counts timeline smoothed
   output$graph.raw <- renderPlot({
     sel <- raw.index.scores( unique( c(selection$brushed.primary, selection$brushed.secondary) ) )
+    #sel <- unique(c(sel, input$derivtable_rows_selected) )
     X <- smoothed()$counts 
     years <- smoothed()$years
    
@@ -798,6 +864,26 @@ wordcor.server <- function(input,output,session){
       for(i in 1:length(sel) ){
         lines(x=years, X[sel[i], ], col="blue", lwd=2)
       }
+    }
+    sel  = input$sderivtable_rows_selected
+    if( length(sel) > 0 ){
+      for(i in 1:length(sel) ){
+        lines(x=years, X[sel[i], ], col="forestgreen", lwd=2)
+      }
+    } 
+    
+    sel  = input$derivtable_rows_selected
+    if( length(sel) > 0 ){
+      for(i in 1:length(sel) ){
+        lines(x=years, X[sel[i], ], col="olivedrab1", lwd=2)
+      }
+    }   
+
+    if( !is.null(smoothed.derivative()$positive) ){
+      abline(v = selection$derivYear) 
+      dmax <- max(abs( c(smoothed.derivative()$positive, smoothed.derivative()$negative) ) ) / maxC
+      points(smoothed.derivative()$years, smoothed.derivative()$positive/dmax, pch=19, col="snow3")
+      points(smoothed.derivative()$years, abs(smoothed.derivative()$negative/dmax), pch=19, col="snow4")
     }
 
     if( length(selection$years$start) > 0 ){
