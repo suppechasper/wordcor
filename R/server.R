@@ -862,7 +862,7 @@ wordcor.server <- function(input,output,session){
           bty="n", xlab="years", ylab="counts", lwd=3 )
     
     s <- secondary.smoothed()
-    s <- s - man(s)
+    s <- s - mean(s)
     s <- s / sqrt(sum(s^2)) 
     lines(x=years, s, col="orange", lwd=3)
 
