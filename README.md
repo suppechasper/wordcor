@@ -34,15 +34,23 @@ The application user interface consists of multiple linked displays.
 
 1. The top graphs shows the primary (red) and secondary (orange) selected words as well as selections made in the plots below. The dots are the positive (light gray) and negative (dark gray) derivative summed over all words. 
   1. Brushing years will restrict correlation computations to the selected years. Reset years will select all years.
-  2. Clicking will select the top 20 words with the most positive and most negative derivatives in that year.
+  2. Double clicking will select the top 20 words with the most positive and most negative derivatives in that year.
 
-2. The primary and secondary selected word and the correlation to all other words represented on a line from -1 to +1 correlation. 
+2. The wavelet plot shows the sum of the wvaelet coefficients for all word (weighted by phase).
+  1. Selecting a region will select 40 words with the largest wavelet coefficients for that year and period length.
+
+3. The primary and secondary selected word and the correlation to all other words represented on a line from -1 to +1 correlation. 
   1. The primary and secondary word can be changed through text input or clicking (for primary) or double clicking (for secondary) on a word represented on th line representation.
 
-3. A correlation plot of with respect to primary and secondary.  
-   1. The primary and secondary word can be changed through clicking (for primary) or double clicking (for secondary) on points in the scatter plot.
-   2. Brushing selects points to be shown in the table on the right and in the graphs above.
-   3. Scale selects the level of clustering, i.e. if individual words should be shown in the plot (large scale) or words with similar correlation be clustered together (small scale).
+4. A correlation plot of with respect to primary and secondary.  
+   1. The primary and secondary word can be changed through clicking (for
+      primary) or double clicking (for secondary) on points in the scatter
+plot.
+   2. Brushing selects points to be shown in the table on the right and in the
+      graphs above.
+   3. Scale selects the level of clustering, i.e. if individual words should be
+      shown in the plot (large scale) or words with similar correlation be
+clustered together (small scale).
    4. Plot type selects the type of plot. Oblique is putting the primary and
       secondary correlation lines orthogonal to each other and plotting each
 point at the corresponding correlation values to the primary and secondary.
@@ -51,7 +59,12 @@ http://mckennapsean.com/scorrplot/ ).
    5. Threshold removes words with low counts.
    6. Absolute Value selects whether positive and negative correlation should be distinguished or not.
 
-4. Table shows selected words in the correlation plot.
-   1. Clicking on rows will highlight the words in the graphs. Selection in the correlation table appear blue in the derivative of the score table dark green and derivative of the raw data in light green. 
+5. Table shows selected words in the correlation plot, largest derivatives for
+   the selected year, and largest wavelet cofficients for a selected region in
+the wavelet image.
+   1. Clicking on rows will highlight the words in the graphs. Selection in the
+      correlation table appear blue, derivative of the score table dark green,
+derivative of the raw data in light green, and wavelet coefficient table in
+dark pink. 
 
   

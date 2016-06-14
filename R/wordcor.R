@@ -17,12 +17,15 @@ wordcor <- function(){
                "google-1grams-1800-wrelative: same as above only including years > 1800"
                )
 
-  x <- select.list(choices)
+  x <- select.list(choices, title="Select data set")
   datafile <- strsplit(x,":")[[1]][1]
   print(datafile)
 
   assign("datafile", datafile, envir = .GlobalEnv)
-  data( list = datafile )
+  data( list=datafile )
+  try(
+    data( list=paste0(datafile,"-powers") )
+  )
 
   ui <- wordcor.ui()
   shinyApp(ui, wordcor.server)

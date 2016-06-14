@@ -34,8 +34,8 @@ wordcor.server <- function(input,output,session){
   selection$derivs <- NULL
   selection$derivYear <- NULL
   selection$years <- list( start = c(), end = c() )
+  selection$wavs <- NULL
  
-
 
     
   #reset selection when gmra scale is changed
@@ -310,6 +310,77 @@ wordcor.server <- function(input,output,session){
     }
   })
 
+  #change primary and esconadry based on select input
+  primarySelect <- observe({
+     type <- input$primary.shape
+     x <- rep(0, ncol(data$raw) )
+     if( length(selection$years$start) == 0){
+       ys <- minYear
+       ye <- maxYear
+       ind <- 1:length(x)
+     }
+     else{
+        ys <- selection$years$start[1]
+        ye <- selection$years$end[1]
+        y <- minYear:maxYear 
+       ind <- which( y > ys & y<ye)
+     }
+     if(type == "linc"){
+       x[ind] <- 1:length(ind)
+     }
+     else if(type == "ldec"){
+       x[ind] <- length(ind):1
+     
+     }
+     else if(type == "sine"){
+        a <- 1:length(ind)
+        x[ind] <- sin( (a-1)/(length(ind)-1) * pi )
+     
+     }
+     if( type != "none" ){
+       x <- x - mean(x)
+       x <- x / sqrt( sum(x^2) )
+       x <- t(x)
+       row.names(x) <- paste0("shape.",type)
+       isolate(projector$primary <<- x)
+     }
+  })
+
+  secondarySelect <- observe({
+     type <- input$secondary.shape
+     x <- rep(0, ncol(data$raw) )
+     if( length(selection$years$start) == 0){
+       ys <- minYear
+       ye <- maxYear
+       ind <- 1:length(x)
+     }
+     else{
+        ys <- selection$years$start[1]
+        ye <- selection$years$end[1]
+        y <- minYear:maxYear 
+       ind <- which( y > ys & y<ye)
+     }
+     if(type == "linc"){
+       x[ind] <- 1:length(ind)
+     }
+     else if(type == "ldec"){
+       x[ind] <- length(ind):1
+     
+     }
+     else if(type == "sine"){
+        a <- 1:length(ind)
+        x[ind] <- sin( (a-1)/(length(ind)-1) * pi )
+     
+     }
+     if( type != "none" ){
+       x <- x - mean(x)
+       x <- x / sqrt( sum(x^2) )
+       x <- t(x)
+       row.names(x) <- paste0("shape.",type)
+       isolate(projector$secondary <<- x)
+     }
+  })
+
   #primary pipeline
   primary.smoothed <- reactive({
     if(input$smoothing > 0 ){
@@ -461,9 +532,7 @@ wordcor.server <- function(input,output,session){
          }
        }
        yend <- c(yend, index[ length(index) ] )
-       if(ystart < yend){ 
-         selection$years <<- list(start=ystart, end=yend)
-       }
+       selection$years <<- list(start=ystart, end=yend)
      }
   }
 
@@ -645,7 +714,7 @@ wordcor.server <- function(input,output,session){
   output$corrprimary <- renderPlot({
     X = projected.primary() 
 
-    cols = rep("#00000010", nrow(X) )
+    cols = rep("#00000050", nrow(X) )
     
     par(mar=c(0.5,0.5,0.5,0.5) )
     pointtype="|"
@@ -684,7 +753,7 @@ wordcor.server <- function(input,output,session){
     X = projected.secondary()
 
 
-    cols = rep("#00000010", nrow(X) )
+    cols = rep("#00000050", nrow(X) )
 
     pointtype="|"
     plot( y~x,  data=X,  type="p", xlim = c( -1.1, 1.1 ), ylim = c( -1.1, 1.1 ), 
@@ -730,21 +799,40 @@ wordcor.server <- function(input,output,session){
     A <- cbind(words[ sel ], round(corp, 2), round(cors,2) )
     colnames(A) <- c("word", "cor( p )", "cor( s )" )
     DT::datatable(A)
-  } )
+  
+  })
 
   output$derivtable <- renderDataTable({
     words <- rownames( sliced()$scores )
+    tryCatch({
     A <- cbind(words[ selection$derivs$index ], signif(selection$derivs$vals, 3) )
     colnames(A) <- c("word", "derivs" )
     DT::datatable(A)
-  } )
+    })
+  
+  })
 
   output$sderivtable <- renderDataTable({
+    tryCatch({
     words <- rownames( sliced()$scores )
+
     A <- cbind(words[ selection$derivs.scaled$index ], signif(selection$derivs.scaled$vals, 3) )
     colnames(A) <- c("word", "derivs" )
     DT::datatable(A)
-  } )
+    })
+
+  })
+
+
+  output$wavtable <- renderDataTable({
+    tryCatch({
+    words <- rownames( sliced()$scores )
+    A <- cbind( words[ selection$wavs$index ], signif(selection$wavs$value,3) )
+    colnames(A) <- c("word", "coeff" )
+    DT::datatable(A)
+    })
+  
+  })
 
 
   #Scaled timeline smoothed
@@ -754,7 +842,8 @@ wordcor.server <- function(input,output,session){
     X <- smoothed()$scaled 
     years <- smoothed()$years
 
-    yMax = 1
+    yMax = max(X)
+    yMin = min(X)
     if(length(sel) > 0 ){
       #hack
       if(length(sel) == 1){
@@ -766,15 +855,15 @@ wordcor.server <- function(input,output,session){
     }
    
     p <- primary.smoothed() 
-    p <- p - min(p)
-    p <- p /max(p) 
-    plot( x=years, p, ylim=c(0, yMax), 
+    p <- p - mean(p)
+    p <- p / sqrt(sum(p^2))
+    plot( x=years, p, ylim=c(yMin, yMax), 
           xlim=c(minYear, maxYear), col="red", type="l", 
           bty="n", xlab="years", ylab="counts", lwd=3 )
     
     s <- secondary.smoothed()
-    s <- s - min(s)
-    s <- s /max(s) 
+    s <- s - man(s)
+    s <- s / sqrt(sum(s^2)) 
     lines(x=years, s, col="orange", lwd=3)
 
 
@@ -782,11 +871,11 @@ wordcor.server <- function(input,output,session){
 
 
     if(length(sel) > 0 ){
-      lines(x=years, meanC/maxC, col="#00000060", lwd=2)
-      lines(x=years, (meanC + sdC) /maxC, col="#00000060", lwd=2)
-      tmp <- meanC - sdC
-      tmp[tmp<0] = 0
-      lines(x=years, tmp/maxC, col="#00000060", lwd=2)
+      #lines(x=years, meanC/maxC, col="#00000060", lwd=2)
+      #lines(x=years, (meanC + sdC) /maxC, col="#00000060", lwd=2)
+      #tmp <- meanC - sdC
+      #tmp[tmp<0] = 0
+      #lines(x=years, tmp/maxC, col="#00000060", lwd=2)
     }
     
     sel  = input$table_rows_selected
@@ -808,10 +897,17 @@ wordcor.server <- function(input,output,session){
       for(i in 1:length(sel) ){
         lines(x=years, X[sel[i], ], col="olivedrab1", lwd=2)
       }
-    }   
+    }  
+
+    sel  = input$wavtable_rows_selected
+    if( length(sel) > 0 ){
+      for(i in 1:length(sel) ){
+        lines(x=years, X[sel[i], ], col="deeppink3", lwd=2)
+      }
+    }     
 
     if( !is.null(smoothed.derivative()$positive) ){
-      abline(v = selection$derivYear) 
+      abline(v = selection$derivYear, lwd=3, col="darkolivegreen3") 
       dmax <- max(abs( c(smoothed.derivative()$positive.scaled, smoothed.derivative()$negative.scaled) ) )
       points(smoothed.derivative()$years, smoothed.derivative()$positive.scaled/dmax, pch=19, col="snow3")
       points(smoothed.derivative()$years, abs(smoothed.derivative()$negative.scaled/dmax), pch=19, col="snow4")
@@ -820,8 +916,8 @@ wordcor.server <- function(input,output,session){
 
     if( length(selection$years$start) > 0 ){
       for(i in 1:length(selection$years$start) ){
-        abline( v = selection$years$start[i] )
-        abline( v = selection$years$end[i] )
+        abline( v = selection$years$start[i], lwd=3 )
+        abline( v = selection$years$end[i], lwd=3 )
         lines( c( selection$years$start[i], selection$years$end[i] ), c(1, 1) )
       }
     }
@@ -852,11 +948,11 @@ wordcor.server <- function(input,output,session){
 
 
     if( length(sel) > 0 ){
-      lines(x=years, meanC, col="#00000060", lwd=2)
-      lines(x=years, (meanC + sdC), col="#00000060", lwd=2)
-      tmp <- meanC - sdC
-      tmp[tmp<0] = 0
-      lines(x=years, tmp, col="#00000060", lwd=2)
+      #lines(x=years, meanC, col="#00000060", lwd=2)
+      #lines(x=years, (meanC + sdC), col="#00000060", lwd=2)
+      #tmp <- meanC - sdC
+      #tmp[tmp<0] = 0
+      #lines(x=years, tmp, col="#00000060", lwd=2)
     }
 
     sel  = input$table_rows_selected
@@ -877,10 +973,17 @@ wordcor.server <- function(input,output,session){
       for(i in 1:length(sel) ){
         lines(x=years, X[sel[i], ], col="olivedrab1", lwd=2)
       }
-    }   
+    } 
+
+    sel  = input$wavtable_rows_selected
+    if( length(sel) > 0 ){
+      for(i in 1:length(sel) ){
+        lines(x=years, X[sel[i], ], col="deeppink3", lwd=2)
+      }
+    }     
 
     if( !is.null(smoothed.derivative()$positive) ){
-      abline(v = selection$derivYear) 
+      abline(v = selection$derivYear, lwd=3, col="darkolivegreen3") 
       dmax <- max(abs( c(smoothed.derivative()$positive, smoothed.derivative()$negative) ) ) / maxC
       points(smoothed.derivative()$years, smoothed.derivative()$positive/dmax, pch=19, col="snow3")
       points(smoothed.derivative()$years, abs(smoothed.derivative()$negative/dmax), pch=19, col="snow4")
@@ -888,13 +991,57 @@ wordcor.server <- function(input,output,session){
 
     if( length(selection$years$start) > 0 ){
       for(i in 1:length(selection$years$start) ){
-        abline( v = selection$years$start[i] )
-        abline( v = selection$years$end[i] )
+        abline( v = selection$years$start[i], lwd=3)
+        abline( v = selection$years$end[i], lwd=3 )
         lines( c( selection$years$start[i], selection$years$end[i] ), c(maxC, maxC) )
       }
     }
 
   } )
+
+
+
+
+  output$wav.pow <- renderPlot({
+    if( !is.null( mean.power.p) ){
+      par(mar = c(4,4,0,0) )
+      axis.1 <- minYear:maxYear
+      axis.2 <- 1:nrow(mean.power.p)
+      lwd.axis <- 0.25
+      n.levels <- 100
+      key.cols <- heat.colors(n.levels)
+      wavelet.levels = quantile(mean.power.p, probs = seq(from = 0, 
+                                                   to = 1, length.out = n.levels + 1))
+      image( axis.1, axis.2, t(mean.power.p), col = key.cols, breaks = wavelet.levels, 
+            useRaster = TRUE, ylab = "log(Period)", xlab = "Year", axes = TRUE )
+
+      
+    }
+  })
+
+    
+  ob.wav.brush <- observeEvent(input$wav_brush, {
+    if( !is.null(mean.power.p) & !is.null(input$wav_brush) ){
+      ev = input$wav_brush
+      axis.1 <- minYear:maxYear
+      axis.2 <- 1:nrow(mean.power.p)
+      i1 <- which.min( abs(ev$xmin - axis.1) )
+      i2 <- which.min( abs(ev$xmax - axis.1) )
+      j1 <- which.min( abs(ev$ymin - axis.2) )
+      j2 <- which.min( abs(ev$ymax - axis.2) )
+      coeff <- rep(NA, length(powers) )
+      withProgress(message = 'Computing coefficient magnitude', value = 0, {
+      for(i in 1:length(powers) ){
+        incProgress( 1 / length(powers), detail = data$words[i] )
+        coeff[i] = max( powers[[i]][j1:j2,i1:i2] ) 
+      }
+      oc <- order(coeff, decreasing=TRUE)
+      
+      })
+      selection$wavs <<- list(index = oc[1:40], value = coeff[ oc[1:40] ] )
+
+    }
+  })
 
 }
 

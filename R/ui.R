@@ -7,12 +7,14 @@ wordcor.ui <- function(){
 fluidPage(
 
     tabsetPanel(
-       tabPanel("Normalized Score", plotOutput("graph.scaled", click="graph1_click",
+       tabPanel("Normalized Score", plotOutput("graph.scaled", dblclick="graph1_click",
                                          brush=brushOpts( "graph1_brush",
                                                          direction = "x",
                                                          resetOnNew=TRUE) ) ),
        tabPanel("Raw Data", plotOutput("graph.raw", brush=brushOpts( "graph2_brush", 
-                                                                         direction = "x", resetOnNew=TRUE) ) ) 
+                                                                         direction = "x", resetOnNew=TRUE) ) ),
+       tabPanel("Wavelet powers", plotOutput("wav.pow", brush=brushOpts( "wav_brush", 
+                                                                         resetOnNew=TRUE) ) )  
     ),
     fluidRow(
       column(6,
@@ -29,6 +31,9 @@ fluidPage(
       column(3, 
         textInput("primary", "Primary:", value = "", width = NULL, placeholder = NULL)
       ),
+      column(3, 
+        selectInput("primary.shape", "Shape:", choices = c("none", "linc", "ldec", "sine" ) )
+      ),
       column(6,
          plotOutput( "corrprimary", click="point_click", dblclick="point_dbl_click",
                                            hover="point_hover", brush=brushOpts("primary_brush", resetOnNew=TRUE), width="100%", height=50 )
@@ -37,6 +42,9 @@ fluidPage(
     fluidRow(
       column(3, 
         textInput("secondary", "Secondary:", value = "", width = NULL, placeholder = NULL)
+      ),
+      column(3, 
+        selectInput("secondary.shape", "Shape:", choices = c("none", "linc", "ldec", "sine" ) )
       ),
       column(6, 
          plotOutput( "corrsecondary", click="point_click", dblclick="point_dbl_click",
@@ -78,7 +86,8 @@ fluidPage(
         tabsetPanel(
           tabPanel( "Corrlations", DT::dataTableOutput('table') ),
           tabPanel( "Derivs Raw", DT::dataTableOutput('sderivtable') ),
-          tabPanel( "Derivs Score", DT::dataTableOutput('derivtable') )
+          tabPanel( "Derivs Score", DT::dataTableOutput('derivtable') ),
+          tabPanel( "Wavlet", DT::dataTableOutput('wavtable') )
         )
       )
     )
