@@ -835,11 +835,11 @@ wordcor.server <- function(input,output,session){
   })
 
 
-  #Scaled timeline smoothed
-  output$graph.scaled <- renderPlot({
+  output$graph.score <- renderPlot({
     sel <- raw.index.scores( unique( c(selection$brushed.primary, selection$brushed.secondary) )  )
     
-    X <- smoothed()$scaled 
+    X <- smoothed()$scaled
+    X <- t(scale(t(X) ) ) / sqrt(ncol(X)-1)  
     years <- smoothed()$years
 
     yMax = max(X)
@@ -863,7 +863,7 @@ wordcor.server <- function(input,output,session){
     
     s <- secondary.smoothed()
     s <- s - mean(s)
-    s <- s / sqrt(sum(s^2)) 
+    s <- s / sqrt( sum(s^2) ) 
     lines(x=years, s, col="orange", lwd=3)
 
 
@@ -871,11 +871,102 @@ wordcor.server <- function(input,output,session){
 
 
     if(length(sel) > 0 ){
-      #lines(x=years, meanC/maxC, col="#00000060", lwd=2)
-      #lines(x=years, (meanC + sdC) /maxC, col="#00000060", lwd=2)
-      #tmp <- meanC - sdC
+      lines(x=years, meanC/maxC, col="#00000060", lwd=2)
+      lines(x=years, (meanC + sdC) /maxC, col="#00000060", lwd=2)
+      tmp <- meanC - sdC
       #tmp[tmp<0] = 0
-      #lines(x=years, tmp/maxC, col="#00000060", lwd=2)
+      lines(x=years, tmp/maxC, col="#00000060", lwd=2)
+    }
+    
+    sel  = input$table_rows_selected
+    if( length(sel) > 0 ){
+      for(i in 1:length(sel) ){
+        lines(x=years, X[sel[i], ], col="blue", lwd=2)
+      }
+    }
+
+    sel  = input$sderivtable_rows_selected
+    if( length(sel) > 0 ){
+      for(i in 1:length(sel) ){
+        lines(x=years, X[sel[i], ], col="forestgreen", lwd=2)
+      }
+    }  
+
+    sel  = input$derivtable_rows_selected
+    if( length(sel) > 0 ){
+      for(i in 1:length(sel) ){
+        lines(x=years, X[sel[i], ], col="olivedrab1", lwd=2)
+      }
+    }  
+
+    sel  = input$wavtable_rows_selected
+    if( length(sel) > 0 ){
+      for(i in 1:length(sel) ){
+        lines(x=years, X[sel[i], ], col="deeppink3", lwd=2)
+      }
+    }     
+
+    if( !is.null(smoothed.derivative()$positive) ){
+      abline(v = selection$derivYear, lwd=3, col="darkolivegreen3") 
+      dmax <- max(abs( c(smoothed.derivative()$positive.scaled, smoothed.derivative()$negative.scaled) ) )
+      points(smoothed.derivative()$years, smoothed.derivative()$positive.scaled/dmax, pch=19, col="snow3")
+      points(smoothed.derivative()$years, abs(smoothed.derivative()$negative.scaled/dmax), pch=19, col="snow4")
+    }
+
+
+    if( length(selection$years$start) > 0 ){
+      for(i in 1:length(selection$years$start) ){
+        abline( v = selection$years$start[i], lwd=3 )
+        abline( v = selection$years$end[i], lwd=3 )
+        lines( c( selection$years$start[i], selection$years$end[i] ), c(1, 1) )
+      }
+    }
+
+  })
+
+
+  #Scaled timeline smoothed
+  output$graph.scaled <- renderPlot({
+    sel <- raw.index.scores( unique( c(selection$brushed.primary, selection$brushed.secondary) )  )
+    
+    X <- smoothed()$scaled
+    X <- t(apply(X, 1, function(x)(x-min(x))/(max(x)-min(x)))) 
+    years <- smoothed()$years
+
+    yMax = max(X)
+    yMin = min(X)
+    if(length(sel) > 0 ){
+      #hack
+      if(length(sel) == 1){
+        sel = rep(sel, 2)
+      }
+      meanC = apply( X[sel, ], 2, mean )
+      sdC = apply( X[sel, ], 2, sd )
+      maxC = max(meanC+sdC)
+    }
+   
+    p <- primary.smoothed() 
+    p <- p - min(p)
+    p <- p / max(p)
+    plot( x=years, p, ylim=c(0, 1), 
+          xlim=c(minYear, maxYear), col="red", type="l", 
+          bty="n", xlab="years", ylab="counts", lwd=3 )
+    
+    s <- secondary.smoothed()
+    s <- s - min(s)
+    s <- s / max(s) 
+    lines(x=years, s, col="orange", lwd=3)
+
+
+
+
+
+    if(length(sel) > 0 ){
+      lines(x=years, meanC/maxC, col="#00000060", lwd=2)
+      lines(x=years, (meanC + sdC) /maxC, col="#00000060", lwd=2)
+      tmp <- meanC - sdC
+      #tmp[tmp<0] = 0
+      lines(x=years, tmp/maxC, col="#00000060", lwd=2)
     }
     
     sel  = input$table_rows_selected
@@ -929,7 +1020,8 @@ wordcor.server <- function(input,output,session){
   output$graph.raw <- renderPlot({
     sel <- raw.index.scores( unique( c(selection$brushed.primary, selection$brushed.secondary) ) )
     #sel <- unique(c(sel, input$derivtable_rows_selected) )
-    X <- smoothed()$counts 
+    X <- smoothed()$counts
+
     years <- smoothed()$years
    
     maxC <- 0

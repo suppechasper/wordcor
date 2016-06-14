@@ -11,6 +11,9 @@ fluidPage(
                                          brush=brushOpts( "graph1_brush",
                                                          direction = "x",
                                                          resetOnNew=TRUE) ) ),
+       tabPanel("Score", plotOutput("graph.score", dblclick="graph1_click",
+                                    brush=brushOpts( "graph1_brush", direction
+                                                    = "x", resetOnNew=TRUE) ) ),
        tabPanel("Raw Data", plotOutput("graph.raw", brush=brushOpts( "graph2_brush", 
                                                                          direction = "x", resetOnNew=TRUE) ) ),
        tabPanel("Wavelet powers", plotOutput("wav.pow", brush=brushOpts( "wav_brush", 
