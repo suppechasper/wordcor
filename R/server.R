@@ -871,11 +871,11 @@ wordcor.server <- function(input,output,session){
 
 
     if(length(sel) > 0 ){
-      lines(x=years, meanC/maxC, col="#00000060", lwd=2)
-      lines(x=years, (meanC + sdC) /maxC, col="#00000060", lwd=2)
-      tmp <- meanC - sdC
+      lines(x=years, meanC, col="#00000060", lwd=2)
+      lines(x=years, (meanC + sdC), col="#00000060", lwd=2)
+      #tmp <- meanC - sdC
       #tmp[tmp<0] = 0
-      lines(x=years, tmp/maxC, col="#00000060", lwd=2)
+      lines(x=years, meanC - sdC, col="#00000060", lwd=2)
     }
     
     sel  = input$table_rows_selected
@@ -962,11 +962,11 @@ wordcor.server <- function(input,output,session){
 
 
     if(length(sel) > 0 ){
-      lines(x=years, meanC/maxC, col="#00000060", lwd=2)
-      lines(x=years, (meanC + sdC) /maxC, col="#00000060", lwd=2)
+      lines(x=years, meanC, col="#00000060", lwd=2)
+      lines(x=years, (meanC + sdC), col="#00000060", lwd=2)
       tmp <- meanC - sdC
       #tmp[tmp<0] = 0
-      lines(x=years, tmp/maxC, col="#00000060", lwd=2)
+      lines(x=years, tmp, col="#00000060", lwd=2)
     }
     
     sel  = input$table_rows_selected
