@@ -16,8 +16,7 @@ fluidPage(
                                                     = "x", resetOnNew=TRUE) ) ),
        tabPanel("Raw Data", plotOutput("graph.raw", brush=brushOpts( "graph2_brush", 
                                                                          direction = "x", resetOnNew=TRUE) ) ),
-       tabPanel("Wavelet powers", plotOutput("wav.pow", brush=brushOpts( "wav_brush", 
-                                                                         resetOnNew=TRUE) ) )  
+       tabPanel("Wavelet powers", plotOutput("wav.pow", click = "wav_click") )
     ),
     fluidRow(
       column(6,

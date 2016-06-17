@@ -1112,26 +1112,14 @@ wordcor.server <- function(input,output,session){
   })
 
     
-  ob.wav.brush <- observeEvent(input$wav_brush, {
-    if( !is.null(mean.power.p) & !is.null(input$wav_brush) ){
-      ev = input$wav_brush
+  ob.wav.click <- observeEvent(input$wav_click, {
+    if( !is.null(mean.power.p) & !is.null(input$wav_click) ){
+      ev = input$wav_click
       axis.1 <- minYear:maxYear
       axis.2 <- 1:nrow(mean.power.p)
-      i1 <- which.min( abs(ev$xmin - axis.1) )
-      i2 <- which.min( abs(ev$xmax - axis.1) )
-      j1 <- which.min( abs(ev$ymin - axis.2) )
-      j2 <- which.min( abs(ev$ymax - axis.2) )
-      coeff <- rep(NA, length(powers) )
-      withProgress(message = 'Computing coefficient magnitude', value = 0, {
-      for(i in 1:length(powers) ){
-        incProgress( 1 / length(powers), detail = data$words[i] )
-        coeff[i] = max( powers[[i]][j1:j2,i1:i2] ) 
-      }
-      oc <- order(coeff, decreasing=TRUE)
-      
-      })
-      selection$wavs <<- list(index = oc[1:40], value = coeff[ oc[1:40] ] )
-
+      i <- which.min( abs(ev$x - axis.1) )
+      j <- which.min( abs(ev$y - axis.2) )
+      selection$wavs <<- list(index = powers.index[j,i, ], value = powers.coeff[j, i,] )
     }
   })
 
